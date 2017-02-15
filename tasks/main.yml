@@ -3,10 +3,13 @@
   shell: gpg --list-keys mpapis
   register: mpapis_gpg_key_exists
   ignore_errors: true
+  changed_when: False
 
 - name: receiving key
   sudo: yes
   shell: "curl -sSL https://rvm.io/mpapis.asc | gpg --import -"
+  register: shell_result
+  changed_when: "'unchanged: 1' not in shell_result.stderr"
 
 - name: downloading RVM installer
   sudo: yes
@@ -14,24 +17,31 @@
     url: "{{rvm_url}}"
     dest: "{{rvm_temp_installer_path}}"
     mode: 0755
+  changed_when: False
 
 - name: installing RVM
   sudo: yes
   command: "{{rvm_temp_installer_path}} --path {{rvm_root}} stable"
+  register: command_result
+  changed_when: "'Upgrading' not in command_result.stdout"
 
 - name: removing RVM installer
   sudo: yes
   file:
     path: "{{rvm_temp_installer_path}}"
     state: absent
+  changed_when: False
 
 - name: setting RVM autolibs on
   sudo: yes
   command: "{{rvm_root}}/bin/rvm autolibs 3"
+  changed_when: False
 
 - name: installing Ruby
   sudo: yes
   command: "{{rvm_root}}/bin/rvm install {{rvm_default_ruby_version}}"
+  register: command_result
+  changed_when: "'Already installed' not in command_result.stderr"
 
 - name: setting default Ruby version
   sudo: yes

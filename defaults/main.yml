@@ -2,7 +2,7 @@
 rvm_url: https://get.rvm.io
 rvm_temp_installer_path: /tmp/rvm-installer.sh
 
-  # the packages which need for download rvm
+# the packages required for downloading rvm
 rvm_required_packages:
     - curl
     - gnupg2
