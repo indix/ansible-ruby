@@ -1,0 +1,53 @@
+---
+- name: Check for mpapis gpg key
+  shell: gpg --list-keys mpapis
+  register: mpapis_gpg_key_exists
+  ignore_errors: true
+
+- name: receiving key
+  sudo: yes
+  shell: "curl -sSL https://rvm.io/mpapis.asc | gpg --import -"
+
+- name: downloading RVM installer
+  sudo: yes
+  get_url:
+    url: "{{rvm_url}}"
+    dest: "{{rvm_temp_installer_path}}"
+    mode: 0755
+
+- name: installing RVM
+  sudo: yes
+  command: "{{rvm_temp_installer_path}} --path {{rvm_root}} stable"
+
+- name: removing RVM installer
+  sudo: yes
+  file:
+    path: "{{rvm_temp_installer_path}}"
+    state: absent
+
+- name: setting RVM autolibs on
+  sudo: yes
+  command: "{{rvm_root}}/bin/rvm autolibs 3"
+
+- name: installing Ruby
+  sudo: yes
+  command: "{{rvm_root}}/bin/rvm install {{rvm_default_ruby_version}}"
+
+- name: setting default Ruby version
+  sudo: yes
+  shell: "source {{rvm_init_script}} && rvm use {{rvm_default_ruby_version}} --default executable=/bin/bash"
+  register: rvm_select_ruby_version_root
+  ignore_errors: true
+  changed_when: false
+
+- name: Create symlinks to ruby and gem
+  sudo: yes
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    state: link
+  with_items:
+    - { src: '{{rvm_root}}/rubies/{{rvm_default_ruby_version}}/bin/ruby', dest: '/usr/local/bin/ruby' }
+    - { src: '{{rvm_root}}/rubies/{{rvm_default_ruby_version}}/bin/gem', dest: '/usr/local/bin/gem' }
